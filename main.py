@@ -1,56 +1,56 @@
-import os
-import requests
 import feedparser
 import json
+import os
+import requests
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
-LAST_FILE = "last_airdrops.json"
 
-RSS_FEEDS = [
-    "https://airdrops.io/feed/",
-    "https://coinmarketcap.com/alexandria/rss/airdrops"
-]
+RSS_URL = "https://airdrops.io/feed/"
 
-def send_message(text):
-    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": CHANNEL_ID, "text": text, "parse_mode": "HTML"}
-    r = requests.post(url, json=payload)
-    print(r.json())
+LAST_FILE = "last_airdrop.json"
 
-def load_last_posted():
+def load_last():
     if os.path.exists(LAST_FILE):
         with open(LAST_FILE, "r") as f:
-            return json.load(f)
-    return {}
+            return json.load(f).get("id")
+    return None
 
-def save_last_posted(data):
+def save_last(post_id):
     with open(LAST_FILE, "w") as f:
-        json.dump(data, f)
+        json.dump({"id": post_id}, f)
 
-last_posted = load_last_posted()
-new_last_posted = last_posted.copy()
+def send(msg):
+    url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
+    requests.post(url, data={
+        "chat_id": CHANNEL_ID,
+        "text": msg,
+        "parse_mode": "HTML"
+    })
 
-for feed_url in RSS_FEEDS:
-    feed = feedparser.parse(feed_url)
-    if not feed.entries:
-        continue
-    latest = feed.entries[0]
+feed = feedparser.parse(RSS_URL)
+last_id = load_last()
 
-    airdrop_id = latest.get("id") or latest.get("link")
+for entry in feed.entries[:3]:  # max 3 per run
+    post_id = entry.id
+    if post_id == last_id:
+        break
 
-    if airdrop_id in last_posted:
-        print(f"Already posted: {latest.title}")
-        continue
+    title = entry.title
+    link = entry.link
+    summary = entry.summary[:300]
 
-    msg = (
-        f"🚨 <b>NEW AIRDROP ALERT</b> 🚨\n\n"
-        f"🔥 <b>{latest.title}</b>\n"
-        f"🔗 Join here: {latest.link}\n\n"
-        f"#Airdrop #Crypto #FreeTokens"
-    )
+    message = f"""
+🚀 <b>New Crypto Airdrop</b>
 
-    send_message(msg)
-    new_last_posted[airdrop_id] = True
+🪙 <b>{title}</b>
 
-save_last_posted(new_last_posted)
+📄 {summary}...
+
+🔗 <a href="{link}">Claim Details</a>
+
+⚠️ DYOR | Free Airdrop
+"""
+    send(message)
+    save_last(post_id)
+    break
