@@ -1,28 +1,28 @@
-name: Ultimate Airdrop Bot
+name: Airdrop Alert Bot
 
 on:
-  workflow_dispatch:    # Manual run
+  workflow_dispatch:
   schedule:
-    - cron: '*/30 * * * *'  # Har 30 minute me run
+    - cron: '*/10 * * * *'
 
 jobs:
-  send-airdrops:
+  run:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - name: Restore cache
+        uses: actions/cache@v3
+        with:
+          path: last_airdrop.json
+          key: airdrop-cache
+
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.11
 
-      - name: Install dependencies
-        run: pip install requests feedparser
-
-      - name: Run Bot
+      - run: pip install feedparser requests
+      - run: python main.py
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
-        run: python main.py
