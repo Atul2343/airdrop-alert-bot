@@ -1,20 +1,17 @@
-name: Telegram Bot Message
+name: Ultimate Airdrop Bot
 
 on:
-  workflow_dispatch:  # Ye allow karta hai manually run karne ke liye
+  workflow_dispatch:    # Manual run
   schedule:
-    - cron: '*/10 * * * *'  # Har 10 minute me run hoga (optional)
-
-env:
-  BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
-  CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
+    - cron: '*/30 * * * *'  # Har 30 minute me run
 
 jobs:
-  send-message:
+  send-airdrops:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -22,9 +19,10 @@ jobs:
           python-version: 3.11
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests
+        run: pip install requests feedparser
 
       - name: Run Bot
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
         run: python main.py
