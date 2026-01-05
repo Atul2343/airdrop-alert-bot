@@ -2,13 +2,16 @@ import feedparser
 import json
 import os
 import requests
+import re
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
 
 RSS_URL = "https://airdrops.io/feed/"
-
 LAST_FILE = "last_airdrop.json"
+
+def clean(text):
+    return re.sub('<[^<]+?>', '', text).strip()
 
 def load_last():
     if os.path.exists(LAST_FILE):
@@ -25,31 +28,42 @@ def send(msg):
     requests.post(url, data={
         "chat_id": CHANNEL_ID,
         "text": msg,
-        "parse_mode": "HTML"
+        "parse_mode": "HTML",
+        "disable_web_page_preview": False
     })
 
 feed = feedparser.parse(RSS_URL)
 last_id = load_last()
 
-for entry in feed.entries[:3]:  # max 3 per run
+for entry in feed.entries[:5]:
     post_id = entry.id
     if post_id == last_id:
         break
 
     title = entry.title
     link = entry.link
-    summary = entry.summary[:300]
+    summary = clean(entry.summary)
 
     message = f"""
-🚀 <b>New Crypto Airdrop</b>
+🚀 <b>New Crypto Airdrop Alert</b>
 
-🪙 <b>{title}</b>
+🪙 <b>Project:</b> {title}
 
-📄 {summary}...
+🎁 <b>Reward:</b> Free Tokens (Depends on tasks)
+👥 <b>Eligibility:</b> New & Existing Users
 
-🔗 <a href="{link}">Claim Details</a>
+📋 <b>How to Participate:</b>
+1️⃣ Visit official link  
+2️⃣ Complete simple social tasks  
+3️⃣ Submit wallet address  
 
-⚠️ DYOR | Free Airdrop
+⏰ <b>Status:</b> Ongoing  
+🔗 <b>Official Link:</b> <a href="{link}">Click Here</a>
+
+📝 <b>About:</b>
+{summary[:500]}...
+
+⚠️ <i>Note: Never share private keys. DYOR.</i>
 """
     send(message)
     save_last(post_id)
