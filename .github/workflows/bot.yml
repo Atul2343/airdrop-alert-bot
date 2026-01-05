@@ -1,28 +1,30 @@
-name: Airdrop Alert Bot
+name: Airdrop Bot
 
+# Manual trigger only
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '*/10 * * * *'
 
 jobs:
-  run:
+  run-bot:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout Repo
+        uses: actions/checkout@v3
 
-      - name: Restore cache
-        uses: actions/cache@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
         with:
-          path: last_airdrop.json
-          key: airdrop-cache
+          python-version: '3.10'
 
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.11
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests beautifulsoup4 python-telegram-bot==13.15
 
-      - run: pip install feedparser requests
-      - run: python main.py
+      - name: Run Airdrop Bot
         env:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
           CHANNEL_ID: ${{ secrets.CHANNEL_ID }}
+        run: |
+          python main.py
